@@ -49,4 +49,29 @@ describe("findSharedMatches", () => {
     expect(result.matches).toHaveLength(1);
     expect(result.confidence).toBe("low");
   });
+
+  it("finds shared matches across three players by team number", () => {
+    const result = findSharedMatches([
+      sample("A", [match("A", 4, 9)]),
+      sample("B", [match("B", 4, 9)]),
+      sample("C", [match("C", 4, 9)])
+    ]);
+
+    expect(result.matches).toHaveLength(1);
+    expect(result.matches[0].participants.map((participant) => participant.nickname)).toEqual(["A", "B", "C"]);
+    expect(result.confidence).toBe("high");
+  });
+
+  it("does not lower confidence when a rejected fallback candidate precedes a confirmed three-player match", () => {
+    const result = findSharedMatches([
+      sample("A", [match("A", 5), match("A", 6, 2)]),
+      sample("B", [match("B", 5, 1), match("B", 6, 2)]),
+      sample("C", [match("C", 6, 2)])
+    ]);
+
+    expect(result.matches).toHaveLength(1);
+    expect(result.matches[0].gameId).toBe(6);
+    expect(result.matches[0].participants.map((participant) => participant.nickname)).toEqual(["A", "B", "C"]);
+    expect(result.confidence).toBe("high");
+  });
 });

@@ -24,6 +24,7 @@ export function findSharedMatches(samples: PlayerMatchSample[]): SharedMatchResu
   for (const candidate of first.matches) {
     const participants = [candidate];
     let allFound = true;
+    let usedFallback = false;
 
     for (const sample of rest) {
       const sameGameMatches = sample.matches.filter((match) => match.gameId === candidate.gameId);
@@ -35,7 +36,7 @@ export function findSharedMatches(samples: PlayerMatchSample[]): SharedMatchResu
         : sameGameMatches[0];
 
       if (!hasCompleteTeamData && sameGameMatches.length > 0) {
-        confidence = "low";
+        usedFallback = true;
       }
 
       if (!teammate) {
@@ -47,6 +48,10 @@ export function findSharedMatches(samples: PlayerMatchSample[]): SharedMatchResu
     }
 
     if (allFound) {
+      if (usedFallback) {
+        confidence = "low";
+      }
+
       shared.push({
         gameId: candidate.gameId,
         startDtm: candidate.startDtm,
