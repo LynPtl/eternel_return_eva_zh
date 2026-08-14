@@ -24,16 +24,38 @@ export interface AnalyzeRequest {
 export interface AnalyzeResponse {
   season: SeasonInfo;
   players: PlayerSummary[];
+  playerErrors: PlayerError[];
   shared: SharedSummary;
   comparison: PlayerComparison;
   aiReview: string;
   warning?: string;
 }
 
+export interface PlayerError {
+  nickname: string;
+  message: string;
+}
+
 export async function analyzePlayers(fetcher: Fetcher, env: ServerEnv, body: unknown): Promise<AnalyzeResponse> {
   const nicknames = validateAnalyzeRequest(body);
   const [season, characters] = await Promise.all([fetchCurrentSeason(fetcher, env), fetchCharacters(fetcher)]);
-  const samples = await Promise.all(nicknames.map((nickname) => fetchPlayerSample(fetcher, nickname, season.key)));
+  const sampleResults = await Promise.allSettled(nicknames.map((nickname) => fetchPlayerSample(fetcher, nickname, season.key)));
+  const samples = sampleResults.flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
+  const playerErrors = sampleResults.flatMap((result, index): PlayerError[] =>
+    result.status === "rejected"
+      ? [
+          {
+            nickname: nicknames[index],
+            message: "无法获取该玩家近期对局，请检查昵称或稍后重试。"
+          }
+        ]
+      : []
+  );
+
+  if (samples.length === 0) {
+    throw new Error("无法获取任何玩家近期对局，请检查昵称或稍后重试。");
+  }
+
   const playerSummaries = samples.map((sample) => summarizePlayer(sample, characters));
   const sharedMatches = findSharedMatches(samples);
   const shared = summarizeShared(sharedMatches, characters);
@@ -44,6 +66,7 @@ export async function analyzePlayers(fetcher: Fetcher, env: ServerEnv, body: unk
     players: playerSummaries,
     shared: {
       matchCount: shared.matchCount,
+      reliableMatchCount: shared.reliableMatchCount,
       confidence: shared.confidence,
       teamMetricsReliable: shared.teamMetricsReliable,
       avgRank: shared.avgRank,
@@ -71,6 +94,7 @@ export async function analyzePlayers(fetcher: Fetcher, env: ServerEnv, body: unk
         }))
       }))
     },
+    playerErrors,
     comparison
   };
 
@@ -79,6 +103,7 @@ export async function analyzePlayers(fetcher: Fetcher, env: ServerEnv, body: unk
   return {
     season,
     players: playerSummaries,
+    playerErrors,
     shared,
     comparison,
     aiReview: deepseek.aiReview,

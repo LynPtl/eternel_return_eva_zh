@@ -19,8 +19,13 @@ interface DeepSeekAnalysisPayload {
     characters?: Array<{ characterNum?: number; name?: string; games?: number }>;
     modeSplit?: Record<string, number>;
   }>;
+  playerErrors?: Array<{
+    nickname?: string;
+    message?: string;
+  }>;
   shared?: {
     matchCount?: number;
+    reliableMatchCount?: number;
     confidence?: "high" | "low";
     teamMetricsReliable?: boolean;
     avgRank?: number | null;
@@ -149,6 +154,7 @@ function projectDeepSeekPayload(payload: unknown): DeepSeekAnalysisPayload {
   return {
     season: projectSeason(input.season),
     players: arrayOrEmpty(input.players).map(projectPlayer),
+    playerErrors: arrayOrEmpty(input.playerErrors).map(projectPlayerError),
     shared: projectShared(input.shared),
     comparison: projectComparison(input.comparison)
   };
@@ -184,10 +190,19 @@ function projectCharacter(value: unknown): { characterNum?: number; name?: strin
   };
 }
 
+function projectPlayerError(value: unknown): { nickname?: string; message?: string } {
+  const error = recordOrEmpty(value);
+  return {
+    nickname: stringOrUndefined(error.nickname),
+    message: stringOrUndefined(error.message)
+  };
+}
+
 function projectShared(value: unknown): DeepSeekAnalysisPayload["shared"] {
   const shared = recordOrEmpty(value);
   return {
     matchCount: numberOrUndefined(shared.matchCount),
+    reliableMatchCount: numberOrUndefined(shared.reliableMatchCount),
     confidence: shared.confidence === "high" || shared.confidence === "low" ? shared.confidence : undefined,
     teamMetricsReliable: booleanOrUndefined(shared.teamMetricsReliable),
     avgRank: nullableNumber(shared.avgRank),

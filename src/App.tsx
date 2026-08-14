@@ -27,8 +27,10 @@ interface AnalyzeResponse {
     characters: Array<{ characterNum: number; name: string; games: number }>;
     modeSplit: Record<string, number>;
   }>;
+  playerErrors: Array<{ nickname: string; message: string }>;
   shared: {
     matchCount: number;
+    reliableMatchCount: number;
     confidence: "high" | "low";
     teamMetricsReliable: boolean;
     avgRank: number | null;
@@ -190,9 +192,25 @@ function Results({ result }: { result: AnalyzeResponse }) {
       <div className="summary-strip">
         <Metric label="赛季" value={result.season.name} />
         <Metric label="共同对局" value={`${result.shared.matchCount} 场`} />
+        <Metric label="可靠同队" value={`${result.shared.reliableMatchCount} 场`} muted={result.shared.reliableMatchCount === 0} />
         <Metric label="识别置信度" value={result.shared.confidence === "high" ? "同局同队" : "仅同局"} />
-        <Metric label="共同均名次" value={sharedReliable ? formatNullable(result.shared.avgRank) : "置信不足"} muted={!sharedReliable} />
       </div>
+
+      {result.playerErrors.length > 0 && (
+        <section className="partial-panel" role="status">
+          <div className="section-title">
+            <AlertCircle size={18} />
+            <h2>部分玩家未完成</h2>
+          </div>
+          <ul>
+            {result.playerErrors.map((item) => (
+              <li key={item.nickname}>
+                <b>{item.nickname}</b>：{item.message}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="result-card primary">
         <div className="section-title">
@@ -211,13 +229,19 @@ function Results({ result }: { result: AnalyzeResponse }) {
             )}
 
             <div className="shared-metrics">
+              <Metric label="可靠同队样本" value={`${result.shared.reliableMatchCount}/${result.shared.matchCount} 场`} muted={!sharedReliable} />
+              <Metric label="共同均名次" value={sharedReliable ? formatNullable(result.shared.avgRank) : "置信不足"} muted={!sharedReliable} />
               <Metric label="共同吃鸡" value={sharedReliable ? `${formatNullable(result.shared.wins)} 场` : "置信不足"} muted={!sharedReliable} />
               <Metric
                 label="平均队伍击杀"
                 value={sharedReliable ? formatNullable(result.shared.avgTeamKill) : "置信不足"}
                 muted={!sharedReliable}
               />
-              <Metric label="样本质量" value={sharedReliable ? "可用于团队指标" : "仅用于个人对比"} muted={!sharedReliable} />
+              <Metric
+                label="样本质量"
+                value={result.shared.confidence === "high" ? "全部同队确认" : "含同局兜底"}
+                muted={result.shared.confidence !== "high"}
+              />
             </div>
 
             <div className="match-list">

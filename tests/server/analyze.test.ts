@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { analyzePlayers, validateAnalyzeRequest } from "../../src/lib/server/analyze";
 import type { DakggMatch, PlayerMatchSample } from "../../src/lib/er/types";
 import { fetchCharacters, fetchCurrentSeason, fetchPlayerSample } from "../../src/lib/server/dakgg";
@@ -14,6 +14,10 @@ vi.mock("../../src/lib/server/dakgg", () => ({
 vi.mock("../../src/lib/server/deepseek", () => ({
   requestDeepSeekReview: vi.fn()
 }));
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
 
 describe("analyze request validation", () => {
   it("accepts 1 to 3 non-empty nicknames and trims them", () => {
@@ -49,6 +53,31 @@ describe("analyze Pages function", () => {
 });
 
 describe("analyze orchestration", () => {
+  it("returns successful players and per-player errors when one DAKGG lookup fails", async () => {
+    vi.mocked(fetchCurrentSeason).mockResolvedValue({ key: "SEASON_21", name: "赛季 S12" });
+    vi.mocked(fetchCharacters).mockResolvedValue({
+      1: { id: 1, key: "Aya", name: "阿雅" }
+    });
+    vi.mocked(fetchPlayerSample).mockImplementation(async (_fetcher, nickname) => {
+      if (nickname === "Missing") throw new Error("matches Missing status 404 raw upstream detail");
+      return buildSample(nickname);
+    });
+    vi.mocked(requestDeepSeekReview).mockResolvedValue({ aiReview: "复盘" });
+
+    const result = await analyzePlayers(fetch, { DEEPSEEK_API_KEY: "secret" }, { players: ["A", "Missing"] });
+
+    expect(result.players.map((player) => player.nickname)).toEqual(["A"]);
+    expect(result.playerErrors).toEqual([{ nickname: "Missing", message: "无法获取该玩家近期对局，请检查昵称或稍后重试。" }]);
+    expect(result.shared).toMatchObject({ matchCount: 0, confidence: "high", reliableMatchCount: 0 });
+    expect(result.comparison.damageLeader).toBeNull();
+
+    const payload = vi.mocked(requestDeepSeekReview).mock.calls[0][2] as {
+      playerErrors?: Array<{ nickname?: string; message?: string }>;
+    };
+    expect(payload.playerErrors).toEqual(result.playerErrors);
+    expect(JSON.stringify(payload)).not.toContain("raw upstream detail");
+  });
+
   it("sends at most 12 compact shared matches with participant context to DeepSeek", async () => {
     vi.mocked(fetchCurrentSeason).mockResolvedValue({ key: "SEASON_21", name: "赛季 S12" });
     vi.mocked(fetchCharacters).mockResolvedValue({

@@ -4,6 +4,7 @@ export interface SharedMatch {
   gameId: number;
   startDtm: string;
   teamNumber?: number;
+  usedFallback: boolean;
   participants: DakggMatch[];
 }
 
@@ -56,6 +57,7 @@ export function findSharedMatches(samples: PlayerMatchSample[]): SharedMatchResu
         gameId: candidate.gameId,
         startDtm: candidate.startDtm,
         teamNumber: candidate.teamNumber,
+        usedFallback,
         participants
       });
     }

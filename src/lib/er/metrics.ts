@@ -57,6 +57,7 @@ export interface SharedParticipant {
 
 export interface SharedSummary {
   matchCount: number;
+  reliableMatchCount: number;
   confidence: "high" | "low";
   teamMetricsReliable: boolean;
   avgRank: number | null;
@@ -131,7 +132,7 @@ export function summarizeShared(shared: SharedMatchResult, characters: Character
   const summarizedMatches = matches.map((item) => {
     const representative = item.participants[0];
     const teamMetricsReliable =
-      shared.confidence === "high" &&
+      !item.usedFallback &&
       item.participants.length > 0 &&
       item.teamNumber !== undefined &&
       item.participants.every((participant) => participant.teamNumber === item.teamNumber);
@@ -158,21 +159,26 @@ export function summarizeShared(shared: SharedMatchResult, characters: Character
       }))
     };
   });
-  const teamMetricsReliable = summarizedMatches.length > 0 && summarizedMatches.every((item) => item.teamMetricsReliable);
+  const reliableMatches = matches.filter((item, index) => summarizedMatches[index]?.teamMetricsReliable);
+  const teamMetricsReliable = reliableMatches.length > 0;
 
   return {
     matchCount: matches.length,
+    reliableMatchCount: reliableMatches.length,
     confidence: shared.confidence,
     teamMetricsReliable,
     avgRank: teamMetricsReliable
-      ? Math.round((matches.reduce((sum, item) => sum + item.participants[0].gameRank, 0) / matches.length) * 10) / 10
+      ? Math.round((reliableMatches.reduce((sum, item) => sum + item.participants[0].gameRank, 0) / reliableMatches.length) * 10) /
+        10
       : null,
     wins: teamMetricsReliable
-      ? matches.filter((item) => item.participants[0].gameRank === 1 || item.participants[0].victory === 1).length
+      ? reliableMatches.filter((item) => item.participants[0].gameRank === 1 || item.participants[0].victory === 1).length
       : null,
     avgTeamKill: teamMetricsReliable
-      ? Math.round((matches.reduce((sum, item) => sum + value(item.participants[0], "teamKill"), 0) / matches.length) * 10) /
-        10
+      ? Math.round(
+          (reliableMatches.reduce((sum, item) => sum + value(item.participants[0], "teamKill"), 0) / reliableMatches.length) *
+            10
+        ) / 10
       : null,
     matches: summarizedMatches
   };

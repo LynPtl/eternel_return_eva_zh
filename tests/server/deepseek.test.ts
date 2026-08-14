@@ -33,9 +33,18 @@ describe("DeepSeek client", () => {
           matches: [{ routeIdOfStart: 77 }]
         }
       ],
+      playerErrors: [
+        {
+          nickname: "Missing",
+          message: "无法获取该玩家近期对局，请检查昵称或稍后重试。",
+          stack: "raw stack",
+          cause: { status: 404 }
+        }
+      ],
       shared: {
         matchCount: 2,
         confidence: "high",
+        reliableMatchCount: 1,
         matches: [
           {
             gameId: 1,
@@ -51,12 +60,16 @@ describe("DeepSeek client", () => {
 
     expect(userContent).toContain("SEASON_21");
     expect(userContent).toContain("sampleCount");
+    expect(userContent).toContain("playerErrors");
+    expect(userContent).toContain("reliableMatchCount");
     expect(userContent).toContain("matches");
     expect(userContent).toContain("damageToPlayer");
     expect(userContent).not.toContain("routeIdOfStart");
     expect(userContent).not.toContain("equipment");
     expect(userContent).not.toContain("skillOrderInfo");
     expect(userContent).not.toContain("rawMatches");
+    expect(userContent).not.toContain("raw stack");
+    expect(userContent).not.toContain("cause");
   });
 
   it("returns empty review when API key is missing", async () => {

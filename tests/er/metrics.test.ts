@@ -60,6 +60,7 @@ describe("metrics aggregation", () => {
           gameId: 10,
           startDtm: "2026-08-14T00:00:00.000+0900",
           teamNumber: 1,
+          usedFallback: false,
           participants: [
             match({ nickname: "A", damageToPlayer: 20000, damageFromPlayer: 4000, viewContribution: 10 }),
             match({ nickname: "B", damageToPlayer: 8000, damageFromPlayer: 13000, viewContribution: 35 })
@@ -90,6 +91,7 @@ describe("metrics aggregation", () => {
         {
           gameId: 11,
           startDtm: "2026-08-14T00:00:00.000+0900",
+          usedFallback: true,
           participants: [
             match({ nickname: "A", teamNumber: undefined, gameRank: 1, teamKill: 12, damageToPlayer: 18000 }),
             match({ nickname: "B", teamNumber: 4, gameRank: 8, teamKill: 2, damageToPlayer: 9000 })
@@ -112,6 +114,55 @@ describe("metrics aggregation", () => {
     expect(comparison.damageLeader).toBe("A");
   });
 
+  it("keeps team metrics from reliable same-team matches when another shared match used fallback", () => {
+    const shared: SharedMatchResult = {
+      confidence: "low",
+      matches: [
+        {
+          gameId: 21,
+          startDtm: "2026-08-14T00:00:00.000+0900",
+          teamNumber: 2,
+          usedFallback: false,
+          participants: [
+            match({ nickname: "A", gameId: 21, teamNumber: 2, gameRank: 1, teamKill: 11 }),
+            match({ nickname: "B", gameId: 21, teamNumber: 2, gameRank: 1, teamKill: 11 })
+          ]
+        },
+        {
+          gameId: 22,
+          startDtm: "2026-08-14T00:01:00.000+0900",
+          teamNumber: 2,
+          usedFallback: false,
+          participants: [
+            match({ nickname: "A", gameId: 22, teamNumber: 2, gameRank: 3, teamKill: 5 }),
+            match({ nickname: "B", gameId: 22, teamNumber: 2, gameRank: 3, teamKill: 5 })
+          ]
+        },
+        {
+          gameId: 23,
+          startDtm: "2026-08-14T00:02:00.000+0900",
+          usedFallback: true,
+          participants: [
+            match({ nickname: "A", gameId: 23, teamNumber: undefined, gameRank: 1, teamKill: 18 }),
+            match({ nickname: "B", gameId: 23, teamNumber: 8, gameRank: 7, teamKill: 3 })
+          ]
+        }
+      ]
+    };
+
+    const sharedSummary = summarizeShared(shared, characters);
+
+    expect(sharedSummary.matchCount).toBe(3);
+    expect(sharedSummary.reliableMatchCount).toBe(2);
+    expect(sharedSummary.confidence).toBe("low");
+    expect(sharedSummary.teamMetricsReliable).toBe(true);
+    expect(sharedSummary.avgRank).toBe(2);
+    expect(sharedSummary.wins).toBe(1);
+    expect(sharedSummary.avgTeamKill).toBe(8);
+    expect(sharedSummary.matches.map((item) => item.teamMetricsReliable)).toEqual([true, true, false]);
+    expect(sharedSummary.matches[2].rank).toBeNull();
+  });
+
   it("handles empty shared participant lists without crashing", () => {
     const shared: SharedMatchResult = {
       confidence: "high",
@@ -120,6 +171,7 @@ describe("metrics aggregation", () => {
           gameId: 12,
           startDtm: "2026-08-14T00:00:00.000+0900",
           teamNumber: 1,
+          usedFallback: false,
           participants: []
         }
       ]
@@ -151,6 +203,7 @@ describe("metrics aggregation", () => {
           gameId: 13,
           startDtm: "2026-08-14T00:00:00.000+0900",
           teamNumber: 2,
+          usedFallback: false,
           participants: [
             match({ nickname: "A", teamNumber: 2, gameRank: 1, teamKill: 10 }),
             match({ nickname: "B", teamNumber: undefined, gameRank: 1, teamKill: 10 })
