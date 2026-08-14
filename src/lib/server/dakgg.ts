@@ -43,6 +43,22 @@ export async function fetchCharacters(fetcher: Fetcher): Promise<CharacterMap> {
   return characters;
 }
 
+export async function syncPlayerByName(fetcher: Fetcher, nickname: string): Promise<void> {
+  const encoded = encodeURIComponent(nickname);
+  try {
+    await fetcher(`https://er.dakgg.io/api/v0/rpc/player-sync/by-name/${encoded}`, {
+      headers: {
+        Accept: "application/json,text/plain,*/*",
+        Origin: "https://dak.gg",
+        Referer: `https://dak.gg/er/players/${encoded}`,
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+  } catch {
+    // Sync is a freshness hint. Match fetching should still work if it fails.
+  }
+}
+
 export function normalizeMatch(nickname: string, raw: Record<string, unknown>): DakggMatch {
   return {
     gameId: Number(raw.gameId),
@@ -82,6 +98,7 @@ export function normalizeMatch(nickname: string, raw: Record<string, unknown>): 
 
 export async function fetchPlayerSample(fetcher: Fetcher, nickname: string, seasonKey: string): Promise<PlayerMatchSample> {
   const pages: DakggMatch[][] = [];
+  await syncPlayerByName(fetcher, nickname);
 
   for (let page = 1; page <= MAX_PAGES; page += 1) {
     const encoded = encodeURIComponent(nickname);

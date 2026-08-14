@@ -54,7 +54,10 @@ describe("DAKGG client helpers", () => {
     const requestedUrls: string[] = [];
     const fetcher = async (url: string | URL | Request) => {
       requestedUrls.push(String(url));
-      if (requestedUrls.length === 1) {
+      if (String(url).includes("/api/v0/rpc/player-sync/by-name/")) {
+        return Response.json({ ok: true });
+      }
+      if (String(url).includes("/matches?") && requestedUrls.filter((item) => item.includes("/matches?")).length === 1) {
         return Response.json({
           matches: [
             {
@@ -83,11 +86,40 @@ describe("DAKGG client helpers", () => {
 
     const sample = await fetchPlayerSample(fetcher, "Pt lantern", "SEASON_21");
 
-    expect(requestedUrls[0]).toContain("/players/Pt%20lantern/matches?");
-    expect(requestedUrls[0]).toContain("season=SEASON_21");
+    expect(requestedUrls[0]).toContain("/api/v0/rpc/player-sync/by-name/Pt%20lantern");
+    expect(requestedUrls[1]).toContain("/players/Pt%20lantern/matches?");
+    expect(requestedUrls[1]).toContain("season=SEASON_21");
     expect(sample.nickname).toBe("Pt lantern");
     expect(sample.matches.map((match) => match.gameId)).toEqual([2]);
     expect(sample.excludedCobaltCount).toBe(1);
     expect(sample.exhaustedPages).toBe(true);
+  });
+
+  it("continues fetching matches when player sync fails", async () => {
+    const requestedUrls: string[] = [];
+    const fetcher = async (url: string | URL | Request) => {
+      requestedUrls.push(String(url));
+      if (String(url).includes("/api/v0/rpc/player-sync/by-name/")) {
+        return new Response("sync unavailable", { status: 503 });
+      }
+      return Response.json({
+        matches: [
+          {
+            gameId: 9,
+            startDtm: "2026-08-14T00:10:00.000+0900",
+            matchingMode: 3,
+            matchingTeamMode: 3,
+            teamNumber: 2,
+            gameRank: 2,
+            characterNum: 50
+          }
+        ]
+      });
+    };
+
+    const sample = await fetchPlayerSample(fetcher, "Ptlantern", "SEASON_21");
+
+    expect(requestedUrls[0]).toContain("/api/v0/rpc/player-sync/by-name/Ptlantern");
+    expect(sample.matches[0].gameId).toBe(9);
   });
 });
