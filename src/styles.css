@@ -1,0 +1,51 @@
+:root {
+  color: #eef2ff;
+  background: #0a0d14;
+  font-family: Inter, "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 32px 18px;
+  background:
+    radial-gradient(circle at 20% 12%, rgba(60, 130, 246, 0.18), transparent 32%),
+    linear-gradient(180deg, #111827 0%, #070a11 100%);
+}
+
+.hero-panel {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 8px;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.78);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #67e8f9;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.lede {
+  margin: 12px 0 0;
+  color: #cbd5e1;
+}
