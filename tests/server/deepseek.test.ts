@@ -36,18 +36,27 @@ describe("DeepSeek client", () => {
       shared: {
         matchCount: 2,
         confidence: "high",
-        matches: [{ gameId: 1, equipment: ["raw"] }]
+        matches: [
+          {
+            gameId: 1,
+            startDtm: "2026-08-14T00:00:00.000+0900",
+            rank: 1,
+            equipment: ["raw"],
+            participants: [{ nickname: "A", damageToPlayer: 1000, equipment: ["raw"] }]
+          }
+        ]
       }
     });
     const userContent = messages[1].content;
 
     expect(userContent).toContain("SEASON_21");
     expect(userContent).toContain("sampleCount");
+    expect(userContent).toContain("matches");
+    expect(userContent).toContain("damageToPlayer");
     expect(userContent).not.toContain("routeIdOfStart");
     expect(userContent).not.toContain("equipment");
     expect(userContent).not.toContain("skillOrderInfo");
     expect(userContent).not.toContain("rawMatches");
-    expect(userContent).not.toContain("matches");
   });
 
   it("returns empty review when API key is missing", async () => {

@@ -48,7 +48,28 @@ export async function analyzePlayers(fetcher: Fetcher, env: ServerEnv, body: unk
       teamMetricsReliable: shared.teamMetricsReliable,
       avgRank: shared.avgRank,
       wins: shared.wins,
-      avgTeamKill: shared.avgTeamKill
+      avgTeamKill: shared.avgTeamKill,
+      matches: shared.matches.slice(0, 12).map((match) => ({
+        gameId: match.gameId,
+        startDtm: match.startDtm,
+        mode: match.mode,
+        rank: match.rank,
+        teamNumber: match.teamNumber,
+        teamMetricsReliable: match.teamMetricsReliable,
+        participants: match.participants.map((participant) => ({
+          nickname: participant.nickname,
+          characterNum: participant.characterNum,
+          characterName: participant.characterName,
+          kills: participant.kills,
+          assists: participant.assists,
+          deaths: participant.deaths,
+          damageToPlayer: participant.damageToPlayer,
+          damageFromPlayer: participant.damageFromPlayer,
+          viewContribution: participant.viewContribution,
+          monsterKill: participant.monsterKill,
+          ccTimeToPlayer: participant.ccTimeToPlayer
+        }))
+      }))
     },
     comparison
   };
@@ -68,8 +89,9 @@ export async function analyzePlayers(fetcher: Fetcher, env: ServerEnv, body: unk
 export function validateAnalyzeRequest(body: unknown): string[] {
   const players = (body as Partial<AnalyzeRequest>)?.players;
   if (!Array.isArray(players)) throw new Error("请输入 1-3 个昵称");
+  if (!players.every((item) => typeof item === "string")) throw new Error("请输入 1-3 个昵称");
 
-  const nicknames = players.map((item) => String(item).trim()).filter(Boolean);
+  const nicknames = players.map((item) => item.trim()).filter(Boolean);
   const unique = [...new Set(nicknames)];
   if (unique.length < 1 || unique.length > 3) throw new Error("请输入 1-3 个昵称");
   return unique;

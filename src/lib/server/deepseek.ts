@@ -26,6 +26,27 @@ interface DeepSeekAnalysisPayload {
     avgRank?: number | null;
     wins?: number | null;
     avgTeamKill?: number | null;
+    matches?: Array<{
+      gameId?: number;
+      startDtm?: string;
+      mode?: string | null;
+      rank?: number | null;
+      teamNumber?: number;
+      teamMetricsReliable?: boolean;
+      participants?: Array<{
+        nickname?: string;
+        characterNum?: number;
+        characterName?: string;
+        kills?: number;
+        assists?: number;
+        deaths?: number;
+        damageToPlayer?: number;
+        damageFromPlayer?: number;
+        viewContribution?: number;
+        monsterKill?: number;
+        ccTimeToPlayer?: number;
+      }>;
+    }>;
   };
   comparison?: {
     damageLeader?: string | null;
@@ -171,7 +192,8 @@ function projectShared(value: unknown): DeepSeekAnalysisPayload["shared"] {
     teamMetricsReliable: booleanOrUndefined(shared.teamMetricsReliable),
     avgRank: nullableNumber(shared.avgRank),
     wins: nullableNumber(shared.wins),
-    avgTeamKill: nullableNumber(shared.avgTeamKill)
+    avgTeamKill: nullableNumber(shared.avgTeamKill),
+    matches: arrayOrEmpty(shared.matches).slice(0, 12).map(projectSharedMatch)
   };
 }
 
@@ -182,6 +204,42 @@ function projectComparison(value: unknown): DeepSeekAnalysisPayload["comparison"
     pressureBearer: nullableString(comparison.pressureBearer),
     visionLeader: nullableString(comparison.visionLeader),
     roleNotes: arrayOrEmpty(comparison.roleNotes).map(stringOrUndefined).filter((item): item is string => item !== undefined)
+  };
+}
+
+function projectSharedMatch(
+  value: unknown
+): NonNullable<NonNullable<DeepSeekAnalysisPayload["shared"]>["matches"]>[number] {
+  const match = recordOrEmpty(value);
+  return {
+    gameId: numberOrUndefined(match.gameId),
+    startDtm: stringOrUndefined(match.startDtm),
+    mode: nullableString(match.mode),
+    rank: nullableNumber(match.rank),
+    teamNumber: numberOrUndefined(match.teamNumber),
+    teamMetricsReliable: booleanOrUndefined(match.teamMetricsReliable),
+    participants: arrayOrEmpty(match.participants).map(projectSharedParticipant)
+  };
+}
+
+function projectSharedParticipant(
+  value: unknown
+): NonNullable<
+  NonNullable<NonNullable<DeepSeekAnalysisPayload["shared"]>["matches"]>[number]["participants"]
+>[number] {
+  const participant = recordOrEmpty(value);
+  return {
+    nickname: stringOrUndefined(participant.nickname),
+    characterNum: numberOrUndefined(participant.characterNum),
+    characterName: stringOrUndefined(participant.characterName),
+    kills: numberOrUndefined(participant.kills),
+    assists: numberOrUndefined(participant.assists),
+    deaths: numberOrUndefined(participant.deaths),
+    damageToPlayer: numberOrUndefined(participant.damageToPlayer),
+    damageFromPlayer: numberOrUndefined(participant.damageFromPlayer),
+    viewContribution: numberOrUndefined(participant.viewContribution),
+    monsterKill: numberOrUndefined(participant.monsterKill),
+    ccTimeToPlayer: numberOrUndefined(participant.ccTimeToPlayer)
   };
 }
 
