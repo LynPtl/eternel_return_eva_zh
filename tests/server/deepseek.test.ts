@@ -16,6 +16,9 @@ describe("DeepSeek client", () => {
     expect(messages[0].content).toContain("坦克");
     expect(messages[0].content).toContain("输出位死亡");
     expect(messages[0].content).toContain("单人分析");
+    expect(messages[0].content).toContain("可以刻薄");
+    expect(messages[0].content).toContain("站桩平A");
+    expect(messages[0].content).toContain("不要做人身辱骂");
     expect(messages[1].content).toContain("SEASON_21");
   });
 
