@@ -35,10 +35,18 @@ export async function fetchCurrentSeason(fetcher: Fetcher, env: Pick<ServerEnv, 
 export async function fetchCharacters(fetcher: Fetcher): Promise<CharacterMap> {
   const response = await fetcher(`${BASE_URL}/data/characters?hl=zh-CN`);
   if (!response.ok) throw new Error(`characters status ${response.status}`);
-  const data = (await response.json()) as { characters?: Array<{ id: number; key: string; name: string }> };
+  const data = (await response.json()) as {
+    characters?: Array<{ id: number; key: string; name: string; charArcheTypes?: string[]; masteries?: string[] }>;
+  };
   const characters: CharacterMap = {};
   for (const character of data.characters ?? []) {
-    characters[character.id] = character;
+    characters[character.id] = {
+      id: character.id,
+      key: character.key,
+      name: character.name,
+      charArcheTypes: character.charArcheTypes,
+      masteries: character.masteries
+    };
   }
   return characters;
 }
