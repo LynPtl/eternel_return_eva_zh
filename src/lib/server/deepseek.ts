@@ -16,7 +16,13 @@ interface DeepSeekAnalysisPayload {
     excludedCobaltCount?: number;
     exhaustedPages?: boolean;
     summary?: Record<string, number>;
-    characters?: Array<{ characterNum?: number; name?: string; games?: number }>;
+    characters?: Array<{
+      characterNum?: number;
+      name?: string;
+      games?: number;
+      charArcheTypes?: string[];
+      masteries?: string[];
+    }>;
     matchups?: {
       mostKilled?: Array<{ characterNum?: number; name?: string; count?: number }>;
       mostKilledBy?: Array<{ characterNum?: number; name?: string; count?: number }>;
@@ -186,12 +192,20 @@ function projectPlayer(value: unknown): NonNullable<DeepSeekAnalysisPayload["pla
   };
 }
 
-function projectCharacter(value: unknown): { characterNum?: number; name?: string; games?: number } {
+function projectCharacter(value: unknown): {
+  characterNum?: number;
+  name?: string;
+  games?: number;
+  charArcheTypes?: string[];
+  masteries?: string[];
+} {
   const character = recordOrEmpty(value);
   return {
     characterNum: numberOrUndefined(character.characterNum),
     name: stringOrUndefined(character.name),
-    games: numberOrUndefined(character.games)
+    games: numberOrUndefined(character.games),
+    charArcheTypes: stringArrayOrUndefined(character.charArcheTypes),
+    masteries: stringArrayOrUndefined(character.masteries)
   };
 }
 
@@ -310,6 +324,12 @@ function arrayOrEmpty(value: unknown): unknown[] {
 
 function stringOrUndefined(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function stringArrayOrUndefined(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const strings = value.filter((item): item is string => typeof item === "string");
+  return strings.length > 0 ? strings : undefined;
 }
 
 function nullableString(value: unknown): string | null | undefined {

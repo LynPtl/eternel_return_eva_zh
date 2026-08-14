@@ -37,7 +37,7 @@ export interface PlayerSummary {
     avgGainVFCredit: number;
     avgUseVFCredit: number;
   };
-  characters: Array<{ characterNum: number; name: string; games: number }>;
+  characters: Array<{ characterNum: number; name: string; games: number; charArcheTypes?: string[]; masteries?: string[] }>;
   matchups: {
     mostKilled: Array<{ characterNum: number; name: string; count: number }>;
     mostKilledBy: Array<{ characterNum: number; name: string; count: number }>;
@@ -125,11 +125,16 @@ export function summarizePlayer(sample: PlayerMatchSample, characters: Character
       avgUseVFCredit: avg(matches, "totalUseVFCredit")
     },
     characters: [...characterCounts.entries()]
-      .map(([characterNum, games]) => ({
-        characterNum,
-        name: characters[characterNum]?.name ?? `角色 ${characterNum}`,
-        games
-      }))
+      .map(([characterNum, games]) => {
+        const character = characters[characterNum];
+        return {
+          characterNum,
+          name: character?.name ?? `角色 ${characterNum}`,
+          games,
+          charArcheTypes: character?.charArcheTypes,
+          masteries: character?.masteries
+        };
+      })
       .sort((left, right) => right.games - left.games),
     matchups: {
       mostKilled: formatDetailCounts(killCounts, characters),

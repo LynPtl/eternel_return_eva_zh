@@ -4,9 +4,9 @@ import type { SharedMatchResult } from "../../src/lib/er/shared";
 import type { CharacterMap, DakggMatch, PlayerMatchSample } from "../../src/lib/er/types";
 
 const characters: CharacterMap = {
-  12: { id: 12, key: "Hyejin", name: "慧珍" },
-  28: { id: 28, key: "Sua", name: "秀雅" },
-  50: { id: 50, key: "Elena", name: "埃琳娜" }
+  12: { id: 12, key: "Hyejin", name: "慧珍", charArcheTypes: ["Mage", "None"], masteries: ["Bow"] },
+  28: { id: 28, key: "Sua", name: "秀雅", charArcheTypes: ["Support", "Mage"], masteries: ["Hammer"] },
+  50: { id: 50, key: "Elena", name: "埃琳娜", charArcheTypes: ["Tanker", "Warrior"], masteries: ["Rapier"] }
 };
 
 function match(overrides: Partial<DakggMatch>): DakggMatch {
@@ -53,6 +53,7 @@ describe("metrics aggregation", () => {
     expect(summary.summary.avgRank).toBe(2);
     expect(summary.summary.wins).toBe(1);
     expect(summary.characters.map((item) => item.name)).toEqual(["慧珍", "埃琳娜"]);
+    expect(summary.characters[0]).toMatchObject({ charArcheTypes: ["Mage", "None"], masteries: ["Bow"] });
   });
 
   it("summarizes most killed and most killed-by characters", () => {

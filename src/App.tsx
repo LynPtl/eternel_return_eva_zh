@@ -25,7 +25,7 @@ interface AnalyzeResponse {
       avgGainVFCredit: number;
       avgUseVFCredit: number;
     };
-    characters: Array<{ characterNum: number; name: string; games: number }>;
+    characters: Array<{ characterNum: number; name: string; games: number; charArcheTypes?: string[]; masteries?: string[] }>;
     matchups: {
       mostKilled: Array<{ characterNum: number; name: string; count: number }>;
       mostKilledBy: Array<{ characterNum: number; name: string; count: number }>;
@@ -307,6 +307,7 @@ function Results({ result }: { result: AnalyzeResponse }) {
               </div>
 
               <p className="muted">常用角色：{formatCharacters(player.characters)}</p>
+              <p className="muted">定位依据：{formatCharacterRoles(player.characters)}</p>
               <p className="muted">常击杀：{formatMatchups(player.matchups.mostKilled)}</p>
               <p className="muted">常被击杀：{formatMatchups(player.matchups.mostKilledBy)}</p>
             </article>
@@ -431,6 +432,17 @@ function formatNumber(value: number): string {
 function formatCharacters(characters: Array<{ name: string; games: number }>): string {
   const topCharacters = characters.slice(0, 3).map((item) => `${item.name} ${item.games} 场`);
   return topCharacters.length > 0 ? topCharacters.join(" / ") : "-";
+}
+
+function formatCharacterRoles(
+  characters: Array<{ name: string; charArcheTypes?: string[]; masteries?: string[] }>
+): string {
+  const roles = characters.slice(0, 3).map((item) => {
+    const archetypes = item.charArcheTypes?.filter((role) => role !== "None").join("/") || "未知定位";
+    const masteries = item.masteries?.join("/") || "未知武器";
+    return `${item.name}: ${archetypes} · ${masteries}`;
+  });
+  return roles.length > 0 ? roles.join(" / ") : "-";
 }
 
 function formatMatchups(matchups: Array<{ name: string; count: number }>): string {

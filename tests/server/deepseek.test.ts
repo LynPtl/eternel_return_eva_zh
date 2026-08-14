@@ -38,6 +38,15 @@ describe("DeepSeek client", () => {
             mostKilled: [{ characterNum: 50, name: "埃琳娜", count: 3 }],
             mostKilledBy: [{ characterNum: 28, name: "秀雅", count: 2 }]
           },
+          characters: [
+            {
+              characterNum: 31,
+              name: "莉央",
+              games: 5,
+              charArcheTypes: ["Marksman", "None"],
+              masteries: ["Bow"]
+            }
+          ],
           equipment: ["raw equipment"],
           skillOrderInfo: { first: "raw skill" },
           matches: [{ routeIdOfStart: 77 }]
@@ -76,6 +85,8 @@ describe("DeepSeek client", () => {
     expect(userContent).toContain("mostKilledBy");
     expect(userContent).toContain("埃琳娜");
     expect(userContent).toContain("秀雅");
+    expect(userContent).toContain("Marksman");
+    expect(userContent).toContain("Bow");
     expect(userContent).toContain("matches");
     expect(userContent).toContain("damageToPlayer");
     expect(userContent).not.toContain("routeIdOfStart");

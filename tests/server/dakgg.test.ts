@@ -21,14 +21,16 @@ describe("DAKGG client helpers", () => {
     const fetcher = async () =>
       Response.json({
         characters: [
-          { id: 12, key: "Hyejin", name: "慧珍" },
-          { id: 50, key: "Elena", name: "埃琳娜" }
+          { id: 12, key: "Hyejin", name: "慧珍", charArcheTypes: ["Mage", "None"], masteries: ["Bow"] },
+          { id: 50, key: "Elena", name: "埃琳娜", charArcheTypes: ["Tanker", "Warrior"], masteries: ["Rapier"] }
         ]
       });
 
     const characters = await fetchCharacters(fetcher);
     expect(characters[12].name).toBe("慧珍");
     expect(characters[50].key).toBe("Elena");
+    expect(characters[12].charArcheTypes).toEqual(["Mage", "None"]);
+    expect(characters[50].masteries).toEqual(["Rapier"]);
   });
 
   it("normalizes match nickname from request context", () => {

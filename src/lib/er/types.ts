@@ -37,6 +37,8 @@ export interface CharacterInfo {
   id: number;
   key: string;
   name: string;
+  charArcheTypes?: string[];
+  masteries?: string[];
 }
 
 export type CharacterMap = Record<number, CharacterInfo>;
