@@ -39,11 +39,15 @@ describe("DAKGG client helpers", () => {
       teamNumber: 2,
       gameRank: 1,
       characterNum: 12,
-      playerKill: 2
+      playerKill: 2,
+      killDetails: "{\"50\":2,\"12\":1}",
+      deathDetails: "{\"28\":1}"
     });
 
     expect(normalized.nickname).toBe("Ptlantern");
     expect(normalized.playerKill).toBe(2);
+    expect(normalized.killDetails).toEqual({ 12: 1, 50: 2 });
+    expect(normalized.deathDetails).toEqual({ 28: 1 });
   });
 
   it("fetches a non-Cobalt player sample across pages", async () => {

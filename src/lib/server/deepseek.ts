@@ -17,6 +17,10 @@ interface DeepSeekAnalysisPayload {
     exhaustedPages?: boolean;
     summary?: Record<string, number>;
     characters?: Array<{ characterNum?: number; name?: string; games?: number }>;
+    matchups?: {
+      mostKilled?: Array<{ characterNum?: number; name?: string; count?: number }>;
+      mostKilledBy?: Array<{ characterNum?: number; name?: string; count?: number }>;
+    };
     modeSplit?: Record<string, number>;
   }>;
   playerErrors?: Array<{
@@ -73,7 +77,7 @@ export function buildDeepSeekMessages(payload: unknown): ChatMessage[] {
     {
       role: "system",
       content:
-        "你是永恒轮回中文复盘助手。请用中文分析 1-3 名玩家的共同对局表现，优先评价多人配合、角色分工、承压和输出分布。必须提到样本数量。不要评价钴协议，因为钴协议已被排除。共同对局样本少时不要过度下结论。建议要具体并且绑定指标。"
+        "你是永恒轮回中文复盘助手。请用中文分析 1-3 名玩家的表现。必须提到样本数量。不要评价钴协议，因为钴协议已被排除。单人分析时只分析该玩家个人表现，不要编造队友配合结论；多人分析时优先评价共同对局、角色分工、承压和输出分布。评分必须按角色职责：坦克/前排重点看承伤、控制、开团质量、死亡是否换到资源，不要苛责坦克输出低；射手/法师/输出位重点看伤害转化、站位和死亡，输出位死亡过高要严格批评。常击杀/常被击杀实验体用于判断操作优势、对位短板和站位问题。共同对局样本少时不要过度下结论。建议要直接、具体、绑定指标，可以尖锐指出明显问题。"
     },
     {
       role: "user",
@@ -177,6 +181,7 @@ function projectPlayer(value: unknown): NonNullable<DeepSeekAnalysisPayload["pla
     exhaustedPages: booleanOrUndefined(player.exhaustedPages),
     summary: projectNumberRecord(player.summary, playerSummaryKeys),
     characters: arrayOrEmpty(player.characters).map(projectCharacter),
+    matchups: projectMatchups(player.matchups),
     modeSplit: projectArbitraryNumberRecord(player.modeSplit)
   };
 }
@@ -187,6 +192,23 @@ function projectCharacter(value: unknown): { characterNum?: number; name?: strin
     characterNum: numberOrUndefined(character.characterNum),
     name: stringOrUndefined(character.name),
     games: numberOrUndefined(character.games)
+  };
+}
+
+function projectMatchups(value: unknown): NonNullable<NonNullable<DeepSeekAnalysisPayload["players"]>[number]["matchups"]> {
+  const matchups = recordOrEmpty(value);
+  return {
+    mostKilled: arrayOrEmpty(matchups.mostKilled).map(projectCharacterCount),
+    mostKilledBy: arrayOrEmpty(matchups.mostKilledBy).map(projectCharacterCount)
+  };
+}
+
+function projectCharacterCount(value: unknown): { characterNum?: number; name?: string; count?: number } {
+  const item = recordOrEmpty(value);
+  return {
+    characterNum: numberOrUndefined(item.characterNum),
+    name: stringOrUndefined(item.name),
+    count: numberOrUndefined(item.count)
   };
 }
 

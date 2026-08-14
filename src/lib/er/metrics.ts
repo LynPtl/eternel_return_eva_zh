@@ -38,6 +38,10 @@ export interface PlayerSummary {
     avgUseVFCredit: number;
   };
   characters: Array<{ characterNum: number; name: string; games: number }>;
+  matchups: {
+    mostKilled: Array<{ characterNum: number; name: string; count: number }>;
+    mostKilledBy: Array<{ characterNum: number; name: string; count: number }>;
+  };
   modeSplit: Record<string, number>;
 }
 
@@ -87,10 +91,14 @@ export function summarizePlayer(sample: PlayerMatchSample, characters: Character
   const assists = total(matches, "playerAssistant");
   const deaths = total(matches, "playerDeaths");
   const characterCounts = new Map<number, number>();
+  const killCounts = new Map<number, number>();
+  const deathCounts = new Map<number, number>();
   const modeSplit: Record<string, number> = {};
 
   for (const match of matches) {
     characterCounts.set(match.characterNum, (characterCounts.get(match.characterNum) ?? 0) + 1);
+    mergeDetailCounts(killCounts, match.killDetails);
+    mergeDetailCounts(deathCounts, match.deathDetails);
     const label = modeLabel(match.matchingMode);
     modeSplit[label] = (modeSplit[label] ?? 0) + 1;
   }
@@ -123,6 +131,10 @@ export function summarizePlayer(sample: PlayerMatchSample, characters: Character
         games
       }))
       .sort((left, right) => right.games - left.games),
+    matchups: {
+      mostKilled: formatDetailCounts(killCounts, characters),
+      mostKilledBy: formatDetailCounts(deathCounts, characters)
+    },
     modeSplit
   };
 }
@@ -214,4 +226,26 @@ export function comparePlayers(shared: SharedSummary): PlayerComparison {
       visionLeader ? `${visionLeader} 的视野贡献最高。` : "共同对局样本不足，无法判断视野贡献。"
     ]
   };
+}
+
+function mergeDetailCounts(target: Map<number, number>, details: Record<number, number> | undefined): void {
+  if (!details) return;
+  for (const [rawCharacterNum, rawCount] of Object.entries(details)) {
+    const characterNum = Number(rawCharacterNum);
+    const count = Number(rawCount);
+    if (Number.isFinite(characterNum) && Number.isFinite(count) && count > 0) {
+      target.set(characterNum, (target.get(characterNum) ?? 0) + count);
+    }
+  }
+}
+
+function formatDetailCounts(counts: Map<number, number>, characters: CharacterMap) {
+  return [...counts.entries()]
+    .map(([characterNum, count]) => ({
+      characterNum,
+      name: characters[characterNum]?.name ?? `角色 ${characterNum}`,
+      count
+    }))
+    .sort((left, right) => right.count - left.count || left.characterNum - right.characterNum)
+    .slice(0, 5);
 }

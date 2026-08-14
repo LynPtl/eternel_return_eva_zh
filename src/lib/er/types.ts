@@ -29,6 +29,8 @@ export interface DakggMatch {
   viewContribution?: number;
   ccTimeToPlayer?: number;
   duration?: number;
+  killDetails?: Record<number, number>;
+  deathDetails?: Record<number, number>;
 }
 
 export interface CharacterInfo {

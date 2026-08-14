@@ -67,14 +67,20 @@ describe("analyze orchestration", () => {
     const result = await analyzePlayers(fetch, { DEEPSEEK_API_KEY: "secret" }, { players: ["A", "Missing"] });
 
     expect(result.players.map((player) => player.nickname)).toEqual(["A"]);
+    expect(result.players[0].matchups).toEqual({
+      mostKilled: [{ characterNum: 2, name: "角色 2", count: 15 }],
+      mostKilledBy: [{ characterNum: 1, name: "阿雅", count: 15 }]
+    });
     expect(result.playerErrors).toEqual([{ nickname: "Missing", message: "无法获取该玩家近期对局，请检查昵称或稍后重试。" }]);
     expect(result.shared).toMatchObject({ matchCount: 0, confidence: "high", reliableMatchCount: 0 });
     expect(result.comparison.damageLeader).toBeNull();
 
     const payload = vi.mocked(requestDeepSeekReview).mock.calls[0][2] as {
       playerErrors?: Array<{ nickname?: string; message?: string }>;
+      players?: Array<{ matchups?: unknown }>;
     };
     expect(payload.playerErrors).toEqual(result.playerErrors);
+    expect(payload.players?.[0].matchups).toEqual(result.players[0].matchups);
     expect(JSON.stringify(payload)).not.toContain("raw upstream detail");
   });
 
@@ -157,6 +163,8 @@ function buildSample(nickname: string): PlayerMatchSample {
     monsterKill: 5,
     viewContribution: 10,
     ccTimeToPlayer: 2,
+    killDetails: { 2: 1 },
+    deathDetails: { 1: 1 },
     routeIdOfStart: 99,
     equipment: ["raw equipment"],
     skillOrderInfo: { first: "raw skill" }

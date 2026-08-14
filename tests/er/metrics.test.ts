@@ -5,6 +5,7 @@ import type { CharacterMap, DakggMatch, PlayerMatchSample } from "../../src/lib/
 
 const characters: CharacterMap = {
   12: { id: 12, key: "Hyejin", name: "慧珍" },
+  28: { id: 28, key: "Sua", name: "秀雅" },
   50: { id: 50, key: "Elena", name: "埃琳娜" }
 };
 
@@ -31,6 +32,8 @@ function match(overrides: Partial<DakggMatch>): DakggMatch {
     totalUseVFCredit: 500,
     viewContribution: 20,
     ccTimeToPlayer: 30,
+    killDetails: {},
+    deathDetails: {},
     ...overrides
   };
 }
@@ -50,6 +53,25 @@ describe("metrics aggregation", () => {
     expect(summary.summary.avgRank).toBe(2);
     expect(summary.summary.wins).toBe(1);
     expect(summary.characters.map((item) => item.name)).toEqual(["慧珍", "埃琳娜"]);
+  });
+
+  it("summarizes most killed and most killed-by characters", () => {
+    const summary = summarizePlayer(
+      sample("A", [
+        match({ killDetails: { 50: 2, 12: 1 }, deathDetails: { 28: 1 } }),
+        match({ gameId: 2, killDetails: { 50: 1 }, deathDetails: { 28: 2, 12: 1 } })
+      ]),
+      characters
+    );
+
+    expect(summary.matchups.mostKilled).toEqual([
+      { characterNum: 50, name: "埃琳娜", count: 3 },
+      { characterNum: 12, name: "慧珍", count: 1 }
+    ]);
+    expect(summary.matchups.mostKilledBy).toEqual([
+      { characterNum: 28, name: "秀雅", count: 3 },
+      { characterNum: 12, name: "慧珍", count: 1 }
+    ]);
   });
 
   it("summarizes shared matches and compares role tendencies", () => {

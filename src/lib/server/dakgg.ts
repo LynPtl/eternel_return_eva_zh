@@ -74,7 +74,9 @@ export function normalizeMatch(nickname: string, raw: Record<string, unknown>): 
     totalUseVFCredit: numberOrUndefined(raw.totalUseVFCredit),
     viewContribution: numberOrUndefined(raw.viewContribution),
     ccTimeToPlayer: numberOrUndefined(raw.ccTimeToPlayer),
-    duration: numberOrUndefined(raw.duration)
+    duration: numberOrUndefined(raw.duration),
+    killDetails: parseDetails(raw.killDetails),
+    deathDetails: parseDetails(raw.deathDetails)
   };
 }
 
@@ -101,4 +103,30 @@ export async function fetchPlayerSample(fetcher: Fetcher, nickname: string, seas
 
 function numberOrUndefined(value: unknown): number | undefined {
   return value === undefined || value === null ? undefined : Number(value);
+}
+
+function parseDetails(value: unknown): Record<number, number> | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+
+  let parsed: unknown = value;
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value) as unknown;
+    } catch {
+      return undefined;
+    }
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return undefined;
+
+  const details: Record<number, number> = {};
+  for (const [key, rawCount] of Object.entries(parsed)) {
+    const characterNum = Number(key);
+    const count = Number(rawCount);
+    if (Number.isFinite(characterNum) && Number.isFinite(count) && count > 0) {
+      details[characterNum] = count;
+    }
+  }
+
+  return Object.keys(details).length > 0 ? details : undefined;
 }

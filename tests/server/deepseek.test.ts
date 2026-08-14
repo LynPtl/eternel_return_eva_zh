@@ -13,6 +13,9 @@ describe("DeepSeek client", () => {
     const messages = buildDeepSeekMessages(payload);
     expect(messages[0].content).toContain("中文");
     expect(messages[0].content).toContain("不要评价钴协议");
+    expect(messages[0].content).toContain("坦克");
+    expect(messages[0].content).toContain("输出位死亡");
+    expect(messages[0].content).toContain("单人分析");
     expect(messages[1].content).toContain("SEASON_21");
   });
 
@@ -28,6 +31,10 @@ describe("DeepSeek client", () => {
         {
           nickname: "A",
           sampleCount: 20,
+          matchups: {
+            mostKilled: [{ characterNum: 50, name: "埃琳娜", count: 3 }],
+            mostKilledBy: [{ characterNum: 28, name: "秀雅", count: 2 }]
+          },
           equipment: ["raw equipment"],
           skillOrderInfo: { first: "raw skill" },
           matches: [{ routeIdOfStart: 77 }]
@@ -62,6 +69,10 @@ describe("DeepSeek client", () => {
     expect(userContent).toContain("sampleCount");
     expect(userContent).toContain("playerErrors");
     expect(userContent).toContain("reliableMatchCount");
+    expect(userContent).toContain("mostKilled");
+    expect(userContent).toContain("mostKilledBy");
+    expect(userContent).toContain("埃琳娜");
+    expect(userContent).toContain("秀雅");
     expect(userContent).toContain("matches");
     expect(userContent).toContain("damageToPlayer");
     expect(userContent).not.toContain("routeIdOfStart");

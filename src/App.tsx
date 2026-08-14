@@ -1,5 +1,6 @@
 import { Activity, AlertCircle, BarChart3, Brain, Loader2, Swords, Users } from "lucide-react";
 import { useMemo, useState } from "react";
+import { parseMarkdown, type MarkdownBlock } from "./lib/ui/markdown";
 
 interface AnalyzeResponse {
   season: { key: string; name: string };
@@ -25,6 +26,10 @@ interface AnalyzeResponse {
       avgUseVFCredit: number;
     };
     characters: Array<{ characterNum: number; name: string; games: number }>;
+    matchups: {
+      mostKilled: Array<{ characterNum: number; name: string; count: number }>;
+      mostKilledBy: Array<{ characterNum: number; name: string; count: number }>;
+    };
     modeSplit: Record<string, number>;
   }>;
   playerErrors: Array<{ nickname: string; message: string }>;
@@ -302,6 +307,8 @@ function Results({ result }: { result: AnalyzeResponse }) {
               </div>
 
               <p className="muted">常用角色：{formatCharacters(player.characters)}</p>
+              <p className="muted">常击杀：{formatMatchups(player.matchups.mostKilled)}</p>
+              <p className="muted">常被击杀：{formatMatchups(player.matchups.mostKilledBy)}</p>
             </article>
           ))}
         </div>
@@ -319,7 +326,7 @@ function Results({ result }: { result: AnalyzeResponse }) {
           <h2>AI 复盘</h2>
         </div>
         {result.warning && <p className="warning">{result.warning}</p>}
-        <p className="ai-text">{result.aiReview || "AI 复盘暂不可用，规则指标已展示。"}</p>
+        <MarkdownView markdown={result.aiReview || "AI 复盘暂不可用，规则指标已展示。"} />
       </section>
     </section>
   );
@@ -332,6 +339,61 @@ function Metric({ label, value, muted = false }: { label: string; value: string 
       <strong>{value}</strong>
     </div>
   );
+}
+
+function MarkdownView({ markdown }: { markdown: string }) {
+  const blocks = parseMarkdown(markdown);
+  return (
+    <div className="markdown-view">
+      {blocks.map((block, index) => (
+        <MarkdownBlockView block={block} key={`${block.type}-${index}`} />
+      ))}
+    </div>
+  );
+}
+
+function MarkdownBlockView({ block }: { block: MarkdownBlock }) {
+  if (block.type === "heading") {
+    const HeadingTag = (`h${block.level + 2}` as "h3" | "h4" | "h5");
+    return <HeadingTag>{block.text}</HeadingTag>;
+  }
+
+  if (block.type === "list") {
+    return (
+      <ul>
+        {block.items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  if (block.type === "table") {
+    return (
+      <div className="markdown-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {block.headers.map((header) => (
+                <th key={header}>{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {block.rows.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {block.headers.map((_, cellIndex) => (
+                  <td key={cellIndex}>{row[cellIndex] ?? ""}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return <p>{block.text}</p>;
 }
 
 async function readAnalyzeResponse(response: Response): Promise<AnalyzeResponse> {
@@ -369,4 +431,9 @@ function formatNumber(value: number): string {
 function formatCharacters(characters: Array<{ name: string; games: number }>): string {
   const topCharacters = characters.slice(0, 3).map((item) => `${item.name} ${item.games} 场`);
   return topCharacters.length > 0 ? topCharacters.join(" / ") : "-";
+}
+
+function formatMatchups(matchups: Array<{ name: string; count: number }>): string {
+  const topMatchups = matchups.slice(0, 3).map((item) => `${item.name} ${item.count} 次`);
+  return topMatchups.length > 0 ? topMatchups.join(" / ") : "-";
 }
