@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build a Cloudflare Pages web app that analyzes Eternal Return match history for 1 to 3 player nicknames. The app focuses on recent shared matches and individual performance, then uses DeepSeek to generate a Chinese coaching-style review.
+Build a Cloudflare Pages web app that analyzes Eternal Return match history for 1 to 3 player nicknames. The app focuses on multiplayer shared-match analysis first, then individual performance, and uses DeepSeek to generate a Chinese coaching-style review.
 
 The first version should be usable without account login, persistent storage, or union-team data. Users type nicknames, run analysis, and receive structured metrics plus an AI summary.
 
@@ -176,10 +176,12 @@ Individual metrics:
 
 Shared-match metrics:
 
-- Intersect players by `gameId`.
+- Intersect players by `gameId` and require matching `teamNumber` when every compared player has team data for that game.
+- If `teamNumber` is missing for any compared record, fall back to `gameId` intersection and mark the shared-match confidence as lower.
 - Only use matches that remain after Cobalt filtering.
 - If there are no shared matches, still show individual metrics and ask DeepSeek to avoid making team synergy claims.
 - For shared matches, compare each player's role by damage, damage taken, deaths, vision, control, and farming.
+- Treat shared-match analysis as the primary product value: surface team rhythm, complementary roles, pressure distribution, and concrete duo/trio improvement advice before generic personal summaries.
 
 Mode labels:
 
@@ -227,25 +229,24 @@ Backend errors:
 
 ## UX
 
-The page should feel like a focused match-analysis tool, not a landing page.
+The page should feel like a focused multiplayer match-analysis tool, not a landing page.
 
-Use `adina-lab.com` as a product reference for the first version:
+Use `adina-lab.com` as a functional reference, not as a strict frontend style reference:
 
-- Dark analysis-lab style with a compact, tool-first layout.
-- Sticky top bar with product name, small icon/character image, and lightweight service status.
+- Tool-first layout.
 - A prominent input panel near the top.
-- Mode-like selector adapted to this product as 1 / 2 / 3 player analysis, not solo/duo/squad queue mode.
+- Clear 1 / 2 / 3 player analysis selection.
 - Numbered nickname inputs so users understand the 1 to 3 player order.
 - Clear helper text about sample rules, including Cobalt Protocol exclusion.
-- Result sections that feel like an analysis dashboard rather than a marketing page.
+- Result sections that emphasize shared-match analysis, team comparison, and AI coaching.
 
-Do not copy Korean copy, branding, or the exact visual assets. The app should be Chinese-first and should use its own product name and visual identity.
+Do not copy Korean copy, branding, exact visual assets, or overall visual styling. The app should be Chinese-first and should use its own product name and visual identity.
 
 Layout:
 
 - Top compact form band with nickname inputs and analyze button.
-- Summary strip showing season, sample counts, excluded Cobalt counts, and shared-match count.
-- Shared match analysis section.
+- Summary strip showing season, sample counts, excluded Cobalt counts, shared-match count, and shared-match confidence.
+- Shared match analysis section as the primary result area.
 - Per-player comparison section.
 - AI review section.
 
