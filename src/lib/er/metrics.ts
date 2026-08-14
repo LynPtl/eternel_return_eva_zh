@@ -58,15 +58,17 @@ export interface SharedParticipant {
 export interface SharedSummary {
   matchCount: number;
   confidence: "high" | "low";
-  avgRank: number;
-  wins: number;
-  avgTeamKill: number;
+  teamMetricsReliable: boolean;
+  avgRank: number | null;
+  wins: number | null;
+  avgTeamKill: number | null;
   matches: Array<{
     gameId: number;
     startDtm: string;
-    mode: string;
-    rank: number;
+    mode: string | null;
+    rank: number | null;
     teamNumber?: number;
+    teamMetricsReliable: boolean;
     participants: SharedParticipant[];
   }>;
 }
@@ -126,27 +128,21 @@ export function summarizePlayer(sample: PlayerMatchSample, characters: Character
 
 export function summarizeShared(shared: SharedMatchResult, characters: CharacterMap): SharedSummary {
   const matches = shared.matches;
+  const summarizedMatches = matches.map((item) => {
+    const representative = item.participants[0];
+    const teamMetricsReliable =
+      shared.confidence === "high" &&
+      item.participants.length > 0 &&
+      item.teamNumber !== undefined &&
+      item.participants.every((participant) => participant.teamNumber === item.teamNumber);
 
-  return {
-    matchCount: matches.length,
-    confidence: shared.confidence,
-    avgRank:
-      matches.length === 0
-        ? 0
-        : Math.round((matches.reduce((sum, item) => sum + item.participants[0].gameRank, 0) / matches.length) * 10) / 10,
-    wins: matches.filter((item) => item.participants[0].gameRank === 1 || item.participants[0].victory === 1).length,
-    avgTeamKill:
-      matches.length === 0
-        ? 0
-        : Math.round(
-            (matches.reduce((sum, item) => sum + value(item.participants[0], "teamKill"), 0) / matches.length) * 10
-          ) / 10,
-    matches: matches.map((item) => ({
+    return {
       gameId: item.gameId,
       startDtm: item.startDtm,
-      mode: modeLabel(item.participants[0].matchingMode),
-      rank: item.participants[0].gameRank,
+      mode: teamMetricsReliable && representative ? modeLabel(representative.matchingMode) : null,
+      rank: teamMetricsReliable && representative ? representative.gameRank : null,
       teamNumber: item.teamNumber,
+      teamMetricsReliable,
       participants: item.participants.map((participant) => ({
         nickname: participant.nickname,
         characterNum: participant.characterNum,
@@ -160,7 +156,25 @@ export function summarizeShared(shared: SharedMatchResult, characters: Character
         monsterKill: value(participant, "monsterKill"),
         ccTimeToPlayer: value(participant, "ccTimeToPlayer")
       }))
-    }))
+    };
+  });
+  const teamMetricsReliable = summarizedMatches.length > 0 && summarizedMatches.every((item) => item.teamMetricsReliable);
+
+  return {
+    matchCount: matches.length,
+    confidence: shared.confidence,
+    teamMetricsReliable,
+    avgRank: teamMetricsReliable
+      ? Math.round((matches.reduce((sum, item) => sum + item.participants[0].gameRank, 0) / matches.length) * 10) / 10
+      : null,
+    wins: teamMetricsReliable
+      ? matches.filter((item) => item.participants[0].gameRank === 1 || item.participants[0].victory === 1).length
+      : null,
+    avgTeamKill: teamMetricsReliable
+      ? Math.round((matches.reduce((sum, item) => sum + value(item.participants[0], "teamKill"), 0) / matches.length) * 10) /
+        10
+      : null,
+    matches: summarizedMatches
   };
 }
 

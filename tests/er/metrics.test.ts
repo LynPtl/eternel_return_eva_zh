@@ -72,8 +72,100 @@ describe("metrics aggregation", () => {
     const comparison = comparePlayers(sharedSummary);
 
     expect(sharedSummary.matchCount).toBe(1);
+    expect(sharedSummary.teamMetricsReliable).toBe(true);
+    expect(sharedSummary.avgRank).toBe(1);
+    expect(sharedSummary.wins).toBe(1);
+    expect(sharedSummary.avgTeamKill).toBe(8);
+    expect(sharedSummary.matches[0].teamMetricsReliable).toBe(true);
+    expect(sharedSummary.matches[0].rank).toBe(1);
     expect(comparison.damageLeader).toBe("A");
     expect(comparison.pressureBearer).toBe("B");
     expect(comparison.visionLeader).toBe("B");
+  });
+
+  it("does not expose team metrics for low-confidence fallback shared matches", () => {
+    const shared: SharedMatchResult = {
+      confidence: "low",
+      matches: [
+        {
+          gameId: 11,
+          startDtm: "2026-08-14T00:00:00.000+0900",
+          participants: [
+            match({ nickname: "A", teamNumber: undefined, gameRank: 1, teamKill: 12, damageToPlayer: 18000 }),
+            match({ nickname: "B", teamNumber: 4, gameRank: 8, teamKill: 2, damageToPlayer: 9000 })
+          ]
+        }
+      ]
+    };
+
+    const sharedSummary = summarizeShared(shared, characters);
+    const comparison = comparePlayers(sharedSummary);
+
+    expect(sharedSummary.teamMetricsReliable).toBe(false);
+    expect(sharedSummary.avgRank).toBeNull();
+    expect(sharedSummary.wins).toBeNull();
+    expect(sharedSummary.avgTeamKill).toBeNull();
+    expect(sharedSummary.matches[0].teamMetricsReliable).toBe(false);
+    expect(sharedSummary.matches[0].mode).toBeNull();
+    expect(sharedSummary.matches[0].rank).toBeNull();
+    expect(sharedSummary.matches[0].participants.map((participant) => participant.nickname)).toEqual(["A", "B"]);
+    expect(comparison.damageLeader).toBe("A");
+  });
+
+  it("handles empty shared participant lists without crashing", () => {
+    const shared: SharedMatchResult = {
+      confidence: "high",
+      matches: [
+        {
+          gameId: 12,
+          startDtm: "2026-08-14T00:00:00.000+0900",
+          teamNumber: 1,
+          participants: []
+        }
+      ]
+    };
+
+    const sharedSummary = summarizeShared(shared, characters);
+    const comparison = comparePlayers(sharedSummary);
+
+    expect(sharedSummary.matchCount).toBe(1);
+    expect(sharedSummary.teamMetricsReliable).toBe(false);
+    expect(sharedSummary.avgRank).toBeNull();
+    expect(sharedSummary.wins).toBeNull();
+    expect(sharedSummary.avgTeamKill).toBeNull();
+    expect(sharedSummary.matches[0]).toMatchObject({
+      gameId: 12,
+      mode: null,
+      rank: null,
+      teamMetricsReliable: false,
+      participants: []
+    });
+    expect(comparison.damageLeader).toBeNull();
+  });
+
+  it("marks partial team data as unreliable even when confidence is high", () => {
+    const shared: SharedMatchResult = {
+      confidence: "high",
+      matches: [
+        {
+          gameId: 13,
+          startDtm: "2026-08-14T00:00:00.000+0900",
+          teamNumber: 2,
+          participants: [
+            match({ nickname: "A", teamNumber: 2, gameRank: 1, teamKill: 10 }),
+            match({ nickname: "B", teamNumber: undefined, gameRank: 1, teamKill: 10 })
+          ]
+        }
+      ]
+    };
+
+    const sharedSummary = summarizeShared(shared, characters);
+
+    expect(sharedSummary.teamMetricsReliable).toBe(false);
+    expect(sharedSummary.avgRank).toBeNull();
+    expect(sharedSummary.wins).toBeNull();
+    expect(sharedSummary.avgTeamKill).toBeNull();
+    expect(sharedSummary.matches[0].teamMetricsReliable).toBe(false);
+    expect(sharedSummary.matches[0].rank).toBeNull();
   });
 });
