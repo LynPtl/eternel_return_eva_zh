@@ -1,0 +1,9 @@
+{
+  "name": "eternel-return-eva-zh",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-08-14",
+  "vars": {
+    "DEFAULT_SEASON": "SEASON_21",
+    "DEEPSEEK_BASE_URL": "https://api.deepseek.com"
+  }
+}

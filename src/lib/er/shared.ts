@@ -1,0 +1,67 @@
+import type { DakggMatch, PlayerMatchSample } from "./types";
+
+export interface SharedMatch {
+  gameId: number;
+  startDtm: string;
+  teamNumber?: number;
+  usedFallback: boolean;
+  participants: DakggMatch[];
+}
+
+export interface SharedMatchResult {
+  matches: SharedMatch[];
+  confidence: "high" | "low";
+}
+
+export function findSharedMatches(samples: PlayerMatchSample[]): SharedMatchResult {
+  if (samples.length <= 1) {
+    return { matches: [], confidence: "high" };
+  }
+
+  const [first, ...rest] = samples;
+  const shared: SharedMatch[] = [];
+  let confidence: "high" | "low" = "high";
+
+  for (const candidate of first.matches) {
+    const participants = [candidate];
+    let allFound = true;
+    let usedFallback = false;
+
+    for (const sample of rest) {
+      const sameGameMatches = sample.matches.filter((match) => match.gameId === candidate.gameId);
+      const hasCompleteTeamData =
+        candidate.teamNumber !== undefined && sameGameMatches.every((match) => match.teamNumber !== undefined);
+
+      const teammate = hasCompleteTeamData
+        ? sameGameMatches.find((match) => match.teamNumber === candidate.teamNumber)
+        : sameGameMatches[0];
+
+      if (!hasCompleteTeamData && sameGameMatches.length > 0) {
+        usedFallback = true;
+      }
+
+      if (!teammate) {
+        allFound = false;
+        break;
+      }
+
+      participants.push(teammate);
+    }
+
+    if (allFound) {
+      if (usedFallback) {
+        confidence = "low";
+      }
+
+      shared.push({
+        gameId: candidate.gameId,
+        startDtm: candidate.startDtm,
+        teamNumber: candidate.teamNumber,
+        usedFallback,
+        participants
+      });
+    }
+  }
+
+  return { matches: shared, confidence };
+}
