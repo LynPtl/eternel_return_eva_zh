@@ -229,6 +229,18 @@ Backend errors:
 
 The page should feel like a focused match-analysis tool, not a landing page.
 
+Use `adina-lab.com` as a product reference for the first version:
+
+- Dark analysis-lab style with a compact, tool-first layout.
+- Sticky top bar with product name, small icon/character image, and lightweight service status.
+- A prominent input panel near the top.
+- Mode-like selector adapted to this product as 1 / 2 / 3 player analysis, not solo/duo/squad queue mode.
+- Numbered nickname inputs so users understand the 1 to 3 player order.
+- Clear helper text about sample rules, including Cobalt Protocol exclusion.
+- Result sections that feel like an analysis dashboard rather than a marketing page.
+
+Do not copy Korean copy, branding, or the exact visual assets. The app should be Chinese-first and should use its own product name and visual identity.
+
 Layout:
 
 - Top compact form band with nickname inputs and analyze button.
@@ -240,9 +252,10 @@ Layout:
 Design style:
 
 - Dense but readable.
-- Use restrained colors and clear metric grouping.
+- Use a dark, game-adjacent palette with restrained accents and clear metric grouping.
 - Use stable card/table dimensions so loading and results do not jump.
 - Avoid decorative hero sections.
+- Avoid oversized gradients or purely decorative effects that reduce readability.
 
 ## Testing And Verification
 
