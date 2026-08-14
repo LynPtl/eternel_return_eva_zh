@@ -279,6 +279,7 @@ h1 {
 }
 
 .confidence-note,
+.comparison-note,
 .warning {
   border: 1px solid rgba(250, 204, 21, 0.22);
   border-radius: 8px;
@@ -289,6 +290,10 @@ h1 {
 
 .confidence-note {
   margin: 12px 0;
+}
+
+.comparison-note {
+  margin: 12px 0 0;
 }
 
 .shared-metrics,

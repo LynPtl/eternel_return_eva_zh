@@ -94,8 +94,9 @@ export function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ players: activeNames })
       });
-      const data = (await response.json()) as AnalyzeResponse;
-      if (!response.ok) throw new Error(data.error ?? "分析失败");
+      if (!response.ok) throw new Error(await readErrorMessage(response));
+
+      const data = await readAnalyzeResponse(response);
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "分析失败");
@@ -114,7 +115,7 @@ export function App() {
     <main className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Eternal Return Team Review</p>
+          <p className="eyebrow">永恒轮回团队复盘 · Eternal Return Team Review</p>
           <h1>永恒轮回组队复盘</h1>
         </div>
         <span className="status-pill">
@@ -182,6 +183,7 @@ export function App() {
 
 function Results({ result }: { result: AnalyzeResponse }) {
   const sharedReliable = result.shared.teamMetricsReliable;
+  const comparisonQualifier = sharedReliable ? "" : "同局个人指标对比，非队伍分工判断";
 
   return (
     <section className="results" aria-label="分析结果">
@@ -245,11 +247,16 @@ function Results({ result }: { result: AnalyzeResponse }) {
           <BarChart3 size={18} />
           <h2>玩家对比</h2>
         </div>
+        {!sharedReliable && <p className="comparison-note">{comparisonQualifier}</p>}
 
         <div className="leader-row">
-          <Metric label="主要输出" value={result.comparison.damageLeader ?? "样本不足"} muted={!result.comparison.damageLeader} />
-          <Metric label="主要承压" value={result.comparison.pressureBearer ?? "样本不足"} muted={!result.comparison.pressureBearer} />
-          <Metric label="视野最高" value={result.comparison.visionLeader ?? "样本不足"} muted={!result.comparison.visionLeader} />
+          <Metric label={sharedReliable ? "主要输出" : "个人输出最高"} value={result.comparison.damageLeader ?? "样本不足"} muted={!result.comparison.damageLeader} />
+          <Metric
+            label={sharedReliable ? "主要承压" : "个人承伤最高"}
+            value={result.comparison.pressureBearer ?? "样本不足"}
+            muted={!result.comparison.pressureBearer}
+          />
+          <Metric label={sharedReliable ? "视野最高" : "个人视野最高"} value={result.comparison.visionLeader ?? "样本不足"} muted={!result.comparison.visionLeader} />
         </div>
 
         <div className="player-grid">
@@ -277,7 +284,7 @@ function Results({ result }: { result: AnalyzeResponse }) {
 
         <ul className="role-notes">
           {result.comparison.roleNotes.map((note) => (
-            <li key={note}>{note}</li>
+            <li key={note}>{sharedReliable ? note : `${comparisonQualifier}：${note}`}</li>
           ))}
         </ul>
       </section>
@@ -301,6 +308,30 @@ function Metric({ label, value, muted = false }: { label: string; value: string 
       <strong>{value}</strong>
     </div>
   );
+}
+
+async function readAnalyzeResponse(response: Response): Promise<AnalyzeResponse> {
+  try {
+    return (await response.json()) as AnalyzeResponse;
+  } catch {
+    throw new Error("分析结果格式异常，请稍后重试。");
+  }
+}
+
+async function readErrorMessage(response: Response): Promise<string> {
+  const fallback = "分析失败，请稍后重试。";
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (!contentType.includes("application/json")) {
+    return fallback;
+  }
+
+  try {
+    const data = (await response.json()) as Partial<AnalyzeResponse>;
+    return typeof data.error === "string" && data.error.trim() ? data.error : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function formatNullable(value: number | null): string {
