@@ -61,3 +61,13 @@ Required environment variable:
 ```text
 DEEPSEEK_API_KEY
 ```
+
+Configure `DEEPSEEK_API_KEY` as a Pages secret before deploying. In the Cloudflare dashboard, open the Pages project, go to Settings -> Environment variables, add `DEEPSEEK_API_KEY` as an encrypted variable, and set it for the production environment. Do not commit the key to the repository.
+
+With Wrangler:
+
+```bash
+wrangler pages secret put DEEPSEEK_API_KEY --project-name=<pages-project-name>
+```
+
+For a GitHub-connected Pages project, keep the build command as `npm run build` and the output directory as `dist`; Cloudflare Pages will run that build and deploy the generated output on connected commits.
