@@ -38,6 +38,15 @@ export interface PlayerSummary {
     avgUseVFCredit: number;
   };
   characters: Array<{ characterNum: number; name: string; games: number; charArcheTypes?: string[]; masteries?: string[] }>;
+  roleProfile: {
+    primaryRole: "carry" | "frontline" | "mage" | "support" | "fighter" | "unknown";
+    archetypes: string[];
+  };
+  evaluation: {
+    tier: "high" | "mid" | "low";
+    riskFlags: string[];
+    coachingFocus: string[];
+  };
   matchups: {
     mostKilled: Array<{ characterNum: number; name: string; count: number }>;
     mostKilledBy: Array<{ characterNum: number; name: string; count: number }>;
@@ -103,44 +112,112 @@ export function summarizePlayer(sample: PlayerMatchSample, characters: Character
     modeSplit[label] = (modeSplit[label] ?? 0) + 1;
   }
 
+  const characterSummaries = [...characterCounts.entries()]
+    .map(([characterNum, games]) => {
+      const character = characters[characterNum];
+      return {
+        characterNum,
+        name: character?.name ?? `角色 ${characterNum}`,
+        games,
+        charArcheTypes: character?.charArcheTypes,
+        masteries: character?.masteries
+      };
+    })
+    .sort((left, right) => right.games - left.games);
+  const roleProfile = buildRoleProfile(characterSummaries);
+  const summary = {
+    avgRank: avg(matches, "gameRank"),
+    wins: matches.filter((match) => match.gameRank === 1 || match.victory === 1).length,
+    top3: matches.filter((match) => match.gameRank <= 3).length,
+    kills,
+    assists,
+    deaths,
+    kda: deaths === 0 ? kills + assists : Math.round(((kills + assists) / deaths) * 100) / 100,
+    avgDamageToPlayer: avg(matches, "damageToPlayer"),
+    avgDamageFromPlayer: avg(matches, "damageFromPlayer"),
+    avgDamageToMonster: avg(matches, "damageToMonster"),
+    avgMonsterKill: avg(matches, "monsterKill"),
+    avgVisionContribution: avg(matches, "viewContribution"),
+    avgCcTime: avg(matches, "ccTimeToPlayer"),
+    avgGainVFCredit: avg(matches, "totalGainVFCredit"),
+    avgUseVFCredit: avg(matches, "totalUseVFCredit")
+  };
+
   return {
     nickname: sample.nickname,
     sampleCount: sample.sampleCount,
     excludedCobaltCount: sample.excludedCobaltCount,
-    summary: {
-      avgRank: avg(matches, "gameRank"),
-      wins: matches.filter((match) => match.gameRank === 1 || match.victory === 1).length,
-      top3: matches.filter((match) => match.gameRank <= 3).length,
-      kills,
-      assists,
-      deaths,
-      kda: deaths === 0 ? kills + assists : Math.round(((kills + assists) / deaths) * 100) / 100,
-      avgDamageToPlayer: avg(matches, "damageToPlayer"),
-      avgDamageFromPlayer: avg(matches, "damageFromPlayer"),
-      avgDamageToMonster: avg(matches, "damageToMonster"),
-      avgMonsterKill: avg(matches, "monsterKill"),
-      avgVisionContribution: avg(matches, "viewContribution"),
-      avgCcTime: avg(matches, "ccTimeToPlayer"),
-      avgGainVFCredit: avg(matches, "totalGainVFCredit"),
-      avgUseVFCredit: avg(matches, "totalUseVFCredit")
-    },
-    characters: [...characterCounts.entries()]
-      .map(([characterNum, games]) => {
-        const character = characters[characterNum];
-        return {
-          characterNum,
-          name: character?.name ?? `角色 ${characterNum}`,
-          games,
-          charArcheTypes: character?.charArcheTypes,
-          masteries: character?.masteries
-        };
-      })
-      .sort((left, right) => right.games - left.games),
+    summary,
+    characters: characterSummaries,
+    roleProfile,
+    evaluation: evaluatePlayer(roleProfile, summary, sample.sampleCount),
     matchups: {
       mostKilled: formatDetailCounts(killCounts, characters),
       mostKilledBy: formatDetailCounts(deathCounts, characters)
     },
     modeSplit
+  };
+}
+
+type PlayerSummaryStats = PlayerSummary["summary"];
+type RoleProfile = PlayerSummary["roleProfile"];
+
+function buildRoleProfile(
+  characters: Array<{ games: number; charArcheTypes?: string[] }>
+): RoleProfile {
+  const archetypeCounts = new Map<string, number>();
+  for (const character of characters) {
+    for (const archetype of character.charArcheTypes ?? []) {
+      if (archetype === "None") continue;
+      archetypeCounts.set(archetype, (archetypeCounts.get(archetype) ?? 0) + character.games);
+    }
+  }
+
+  const archetypes = [...archetypeCounts.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .map(([archetype]) => archetype);
+
+  const primary = archetypes[0];
+  if (primary === "Marksman") return { primaryRole: "carry", archetypes };
+  if (primary === "Tanker") return { primaryRole: "frontline", archetypes };
+  if (primary === "Mage") return { primaryRole: "mage", archetypes };
+  if (primary === "Support") return { primaryRole: "support", archetypes };
+  if (primary === "Warrior" || primary === "Assassin") return { primaryRole: "fighter", archetypes };
+  return { primaryRole: "unknown", archetypes };
+}
+
+function evaluatePlayer(roleProfile: RoleProfile, summary: PlayerSummaryStats, sampleCount: number): PlayerSummary["evaluation"] {
+  const riskFlags: string[] = [];
+  const coachingFocus: string[] = [];
+  const avgDeaths = sampleCount > 0 ? summary.deaths / sampleCount : 0;
+  const isOutputRole = roleProfile.primaryRole === "carry" || roleProfile.primaryRole === "mage";
+
+  if (isOutputRole && avgDeaths >= 2.4) {
+    riskFlags.push("输出位死亡过高");
+    coachingFocus.push("低价值输出位：先解决站位和死亡问题，再谈伤害数据。");
+  }
+  if (isOutputRole && summary.avgCcTime < 20 && summary.avgVisionContribution < 15) {
+    riskFlags.push("输出位控制/视野贡献偏低");
+    coachingFocus.push("不要只站桩平A，必须补控制链衔接、视野和进退场判断。");
+  }
+  if (isOutputRole && summary.avgDamageToPlayer >= 12000 && avgDeaths >= 2.4) {
+    riskFlags.push("疑似站桩平A型输出");
+  }
+  if (roleProfile.primaryRole === "frontline" && summary.avgCcTime < 35) {
+    riskFlags.push("前排控制贡献不足");
+    coachingFocus.push("前排优先看开团、控制和吸收压力，不以低输出作为主要扣分。");
+  }
+
+  const tier = riskFlags.some((flag) => flag.includes("输出位死亡过高") || flag.includes("站桩平A"))
+    ? "low"
+    : riskFlags.length > 0
+      ? "mid"
+      : "high";
+
+  return {
+    tier,
+    riskFlags,
+    coachingFocus
   };
 }
 
