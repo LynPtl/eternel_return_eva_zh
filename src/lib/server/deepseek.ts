@@ -23,6 +23,15 @@ interface DeepSeekAnalysisPayload {
       charArcheTypes?: string[];
       masteries?: string[];
     }>;
+    roleProfile?: {
+      primaryRole?: string;
+      archetypes?: string[];
+    };
+    evaluation?: {
+      tier?: string;
+      riskFlags?: string[];
+      coachingFocus?: string[];
+    };
     matchups?: {
       mostKilled?: Array<{ characterNum?: number; name?: string; count?: number }>;
       mostKilledBy?: Array<{ characterNum?: number; name?: string; count?: number }>;
@@ -83,7 +92,7 @@ export function buildDeepSeekMessages(payload: unknown): ChatMessage[] {
     {
       role: "system",
       content:
-        "你是永恒轮回中文复盘助手。请用中文分析 1-3 名玩家的表现。必须提到样本数量。不要评价钴协议，因为钴协议已被排除。单人分析时只分析该玩家个人表现，不要编造队友配合结论；多人分析时优先评价共同对局、角色分工、承压和输出分布。评分必须按角色职责：坦克/前排重点看承伤、控制、开团质量、死亡是否换到资源，不要苛责坦克输出低；射手/法师/输出位重点看伤害转化、站位和死亡，输出位死亡过高要严格批评。常击杀/常被击杀实验体用于判断操作优势、对位短板和站位问题。共同对局样本少时不要过度下结论。建议要直接、具体、绑定指标，可以刻薄，可以尖锐指出明显问题，但不要做人身辱骂。对输出位如果伤害看似还行但死亡高、控制低、视野低、常被刺客/突进击杀，要明确指出这是站位和基本功问题；必要时可以写成“不是会玩 AD，只是在站桩平A蹭输出”“靠队友兜底”“拖累团队节奏”这类基于数据的严厉评价。"
+        "你是永恒轮回中文复盘助手。请用中文分析 1-3 名玩家的表现。必须提到样本数量。不要评价钴协议，因为钴协议已被排除。单人分析时只分析该玩家个人表现，不要编造队友配合结论；多人分析时优先评价共同对局、角色分工、承压和输出分布。评分必须按角色职责：坦克/前排重点看承伤、控制、开团质量、死亡是否换到资源，不要苛责坦克输出低；射手/法师/输出位重点看伤害转化、站位和死亡，输出位死亡过高要严格批评。常击杀/常被击杀实验体用于判断操作优势、对位短板和站位问题。payload 中的 evaluation.tier、riskFlags、coachingFocus 是后端确定性评价，必须优先采用；如果 tier=low，不要写成中规中矩或表现尚可。共同对局样本少时不要过度下结论。建议要直接、具体、绑定指标，可以刻薄，可以尖锐指出明显问题，但不要做人身辱骂。对输出位如果伤害看似还行但死亡高、控制低、视野低、常被刺客/突进击杀，要明确指出这是站位和基本功问题；必要时可以写成“不是会玩 AD，只是在站桩平A蹭输出”“靠队友兜底”“拖累团队节奏”这类基于数据的严厉评价。"
     },
     {
       role: "user",
@@ -187,8 +196,27 @@ function projectPlayer(value: unknown): NonNullable<DeepSeekAnalysisPayload["pla
     exhaustedPages: booleanOrUndefined(player.exhaustedPages),
     summary: projectNumberRecord(player.summary, playerSummaryKeys),
     characters: arrayOrEmpty(player.characters).map(projectCharacter),
+    roleProfile: projectRoleProfile(player.roleProfile),
+    evaluation: projectEvaluation(player.evaluation),
     matchups: projectMatchups(player.matchups),
     modeSplit: projectArbitraryNumberRecord(player.modeSplit)
+  };
+}
+
+function projectRoleProfile(value: unknown): NonNullable<NonNullable<DeepSeekAnalysisPayload["players"]>[number]["roleProfile"]> {
+  const roleProfile = recordOrEmpty(value);
+  return {
+    primaryRole: stringOrUndefined(roleProfile.primaryRole),
+    archetypes: stringArrayOrUndefined(roleProfile.archetypes)
+  };
+}
+
+function projectEvaluation(value: unknown): NonNullable<NonNullable<DeepSeekAnalysisPayload["players"]>[number]["evaluation"]> {
+  const evaluation = recordOrEmpty(value);
+  return {
+    tier: stringOrUndefined(evaluation.tier),
+    riskFlags: stringArrayOrUndefined(evaluation.riskFlags),
+    coachingFocus: stringArrayOrUndefined(evaluation.coachingFocus)
   };
 }
 

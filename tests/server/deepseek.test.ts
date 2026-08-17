@@ -19,6 +19,8 @@ describe("DeepSeek client", () => {
     expect(messages[0].content).toContain("可以刻薄");
     expect(messages[0].content).toContain("站桩平A");
     expect(messages[0].content).toContain("不要做人身辱骂");
+    expect(messages[0].content).toContain("evaluation.tier");
+    expect(messages[0].content).toContain("不要写成中规中矩");
     expect(messages[1].content).toContain("SEASON_21");
   });
 
@@ -37,6 +39,15 @@ describe("DeepSeek client", () => {
           matchups: {
             mostKilled: [{ characterNum: 50, name: "埃琳娜", count: 3 }],
             mostKilledBy: [{ characterNum: 28, name: "秀雅", count: 2 }]
+          },
+          roleProfile: {
+            primaryRole: "carry",
+            archetypes: ["Marksman"]
+          },
+          evaluation: {
+            tier: "low",
+            riskFlags: ["输出位死亡过高", "疑似站桩平A型输出"],
+            coachingFocus: ["低价值输出位：先解决站位和死亡问题，再谈伤害数据。"]
           },
           characters: [
             {
@@ -87,6 +98,9 @@ describe("DeepSeek client", () => {
     expect(userContent).toContain("秀雅");
     expect(userContent).toContain("Marksman");
     expect(userContent).toContain("Bow");
+    expect(userContent).toContain("evaluation");
+    expect(userContent).toContain("low");
+    expect(userContent).toContain("疑似站桩平A型输出");
     expect(userContent).toContain("matches");
     expect(userContent).toContain("damageToPlayer");
     expect(userContent).not.toContain("routeIdOfStart");

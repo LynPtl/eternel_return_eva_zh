@@ -75,6 +75,48 @@ describe("metrics aggregation", () => {
     ]);
   });
 
+  it("marks fragile marksman samples as low-value carry play", () => {
+    const summary = summarizePlayer(
+      sample("UncleJoke", [
+        match({
+          characterNum: 31,
+          playerKill: 3,
+          playerAssistant: 4,
+          playerDeaths: 3,
+          damageToPlayer: 14500,
+          damageFromPlayer: 9000,
+          viewContribution: 8,
+          ccTimeToPlayer: 8,
+          deathDetails: { 53: 1 }
+        }),
+        match({
+          gameId: 2,
+          characterNum: 31,
+          playerKill: 4,
+          playerAssistant: 3,
+          playerDeaths: 3,
+          damageToPlayer: 15000,
+          damageFromPlayer: 10000,
+          viewContribution: 10,
+          ccTimeToPlayer: 10,
+          deathDetails: { 53: 1 }
+        })
+      ]),
+      {
+        ...characters,
+        31: { id: 31, key: "Rio", name: "莉央", charArcheTypes: ["Marksman", "None"], masteries: ["Bow"] },
+        53: { id: 53, key: "Markus", name: "马库斯", charArcheTypes: ["Tanker", "Warrior"], masteries: ["Axe"] }
+      }
+    );
+
+    expect(summary.roleProfile.primaryRole).toBe("carry");
+    expect(summary.evaluation.tier).toBe("low");
+    expect(summary.evaluation.riskFlags).toEqual(
+      expect.arrayContaining(["输出位死亡过高", "输出位控制/视野贡献偏低", "疑似站桩平A型输出"])
+    );
+    expect(summary.evaluation.coachingFocus.some((item) => item.includes("低价值输出位"))).toBe(true);
+  });
+
   it("summarizes shared matches and compares role tendencies", () => {
     const shared: SharedMatchResult = {
       confidence: "high",

@@ -26,6 +26,15 @@ interface AnalyzeResponse {
       avgUseVFCredit: number;
     };
     characters: Array<{ characterNum: number; name: string; games: number; charArcheTypes?: string[]; masteries?: string[] }>;
+    roleProfile: {
+      primaryRole: "carry" | "frontline" | "mage" | "support" | "fighter" | "unknown";
+      archetypes: string[];
+    };
+    evaluation: {
+      tier: "high" | "mid" | "low";
+      riskFlags: string[];
+      coachingFocus: string[];
+    };
     matchups: {
       mostKilled: Array<{ characterNum: number; name: string; count: number }>;
       mostKilledBy: Array<{ characterNum: number; name: string; count: number }>;
@@ -293,9 +302,9 @@ function Results({ result }: { result: AnalyzeResponse }) {
             <article className="player-card" key={player.nickname}>
               <div className="player-card-header">
                 <h3>{player.nickname}</h3>
-                <span>{player.sampleCount} 场</span>
+                <span className={`tier-pill tier-${player.evaluation.tier}`}>{formatTier(player.evaluation.tier)}</span>
               </div>
-              <p className="muted">排除钴协议 {player.excludedCobaltCount} 场</p>
+              <p className="muted">样本 {player.sampleCount} 场，排除钴协议 {player.excludedCobaltCount} 场</p>
 
               <div className="mini-metrics">
                 <Metric label="均名次" value={player.summary.avgRank} />
@@ -308,6 +317,7 @@ function Results({ result }: { result: AnalyzeResponse }) {
 
               <p className="muted">常用角色：{formatCharacters(player.characters)}</p>
               <p className="muted">定位依据：{formatCharacterRoles(player.characters)}</p>
+              <p className="muted">风险标签：{player.evaluation.riskFlags.join(" / ") || "-"}</p>
               <p className="muted">常击杀：{formatMatchups(player.matchups.mostKilled)}</p>
               <p className="muted">常被击杀：{formatMatchups(player.matchups.mostKilledBy)}</p>
             </article>
@@ -432,6 +442,12 @@ function formatNumber(value: number): string {
 function formatCharacters(characters: Array<{ name: string; games: number }>): string {
   const topCharacters = characters.slice(0, 3).map((item) => `${item.name} ${item.games} 场`);
   return topCharacters.length > 0 ? topCharacters.join(" / ") : "-";
+}
+
+function formatTier(tier: "high" | "mid" | "low"): string {
+  if (tier === "low") return "低评价";
+  if (tier === "mid") return "有明显问题";
+  return "表现稳定";
 }
 
 function formatCharacterRoles(
