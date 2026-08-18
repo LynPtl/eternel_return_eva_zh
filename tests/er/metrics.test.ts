@@ -117,6 +117,16 @@ describe("metrics aggregation", () => {
     expect(summary.evaluation.coachingFocus.some((item) => item.includes("低价值输出位"))).toBe(true);
   });
 
+  it("forces blacklisted players into low evaluation", () => {
+    for (const nickname of ["雨风还是彩虹", "UncleJoke", "battia"]) {
+      const summary = summarizePlayer(sample(nickname, [match({ nickname })]), characters);
+
+      expect(summary.evaluation.tier).toBe("low");
+      expect(summary.evaluation.riskFlags).toEqual(expect.arrayContaining(["黑名单低评价", "队伍副作用"]));
+      expect(summary.evaluation.coachingFocus.some((item) => item.includes("不建议组队"))).toBe(true);
+    }
+  });
+
   it("summarizes shared matches and compares role tendencies", () => {
     const shared: SharedMatchResult = {
       confidence: "high",

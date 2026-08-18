@@ -21,6 +21,8 @@ describe("DeepSeek client", () => {
     expect(messages[0].content).toContain("不要做人身辱骂");
     expect(messages[0].content).toContain("evaluation.tier");
     expect(messages[0].content).toContain("不要写成中规中矩");
+    expect(messages[0].content).toContain("黑名单低评价");
+    expect(messages[0].content).toContain("队伍副作用");
     expect(messages[1].content).toContain("SEASON_21");
   });
 
