@@ -16,6 +16,8 @@ function total(matches: DakggMatch[], key: keyof DakggMatch): number {
   return matches.reduce((sum, match) => sum + value(match, key), 0);
 }
 
+const LOW_EVALUATION_NICKNAME_SET = new Set(["雨风还是彩虹", "unclejoke", "battia"]);
+
 export interface PlayerSummary {
   nickname: string;
   sampleCount: number;
@@ -150,7 +152,7 @@ export function summarizePlayer(sample: PlayerMatchSample, characters: Character
     summary,
     characters: characterSummaries,
     roleProfile,
-    evaluation: evaluatePlayer(roleProfile, summary, sample.sampleCount),
+    evaluation: evaluatePlayer(sample.nickname, roleProfile, summary, sample.sampleCount),
     matchups: {
       mostKilled: formatDetailCounts(killCounts, characters),
       mostKilledBy: formatDetailCounts(deathCounts, characters)
@@ -186,12 +188,23 @@ function buildRoleProfile(
   return { primaryRole: "unknown", archetypes };
 }
 
-function evaluatePlayer(roleProfile: RoleProfile, summary: PlayerSummaryStats, sampleCount: number): PlayerSummary["evaluation"] {
+function evaluatePlayer(
+  nickname: string,
+  roleProfile: RoleProfile,
+  summary: PlayerSummaryStats,
+  sampleCount: number
+): PlayerSummary["evaluation"] {
   const riskFlags: string[] = [];
   const coachingFocus: string[] = [];
+  const normalizedNickname = nickname.trim().toLowerCase();
+  const isLowEvaluationNickname = LOW_EVALUATION_NICKNAME_SET.has(nickname.trim()) || LOW_EVALUATION_NICKNAME_SET.has(normalizedNickname);
   const avgDeaths = sampleCount > 0 ? summary.deaths / sampleCount : 0;
   const isOutputRole = roleProfile.primaryRole === "carry" || roleProfile.primaryRole === "mage";
 
+  if (isLowEvaluationNickname) {
+    riskFlags.push("黑名单低评价", "队伍副作用");
+    coachingFocus.push("不建议组队：按黑名单规则直接视为队伍副作用，AI 复盘必须给出低评价。");
+  }
   if (isOutputRole && avgDeaths >= 2.4) {
     riskFlags.push("输出位死亡过高");
     coachingFocus.push("低价值输出位：先解决站位和死亡问题，再谈伤害数据。");
@@ -208,7 +221,7 @@ function evaluatePlayer(roleProfile: RoleProfile, summary: PlayerSummaryStats, s
     coachingFocus.push("前排优先看开团、控制和吸收压力，不以低输出作为主要扣分。");
   }
 
-  const tier = riskFlags.some((flag) => flag.includes("输出位死亡过高") || flag.includes("站桩平A"))
+  const tier = isLowEvaluationNickname || riskFlags.some((flag) => flag.includes("输出位死亡过高") || flag.includes("站桩平A"))
     ? "low"
     : riskFlags.length > 0
       ? "mid"
