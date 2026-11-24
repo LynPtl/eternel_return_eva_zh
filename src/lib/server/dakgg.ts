@@ -29,7 +29,7 @@ export async function fetchCurrentSeason(fetcher: Fetcher, env: Pick<ServerEnv, 
     // Fall through to configured default.
   }
 
-  return { key: env.DEFAULT_SEASON ?? "SEASON_21", name: env.DEFAULT_SEASON ?? "SEASON_21" };
+  return { key: env.DEFAULT_SEASON ?? "SEASON_22", name: env.DEFAULT_SEASON ?? "SEASON_22" };
 }
 
 export async function fetchCharacters(fetcher: Fetcher): Promise<CharacterMap> {

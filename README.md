@@ -12,14 +12,14 @@ cp .dev.vars.example .dev.vars
 If your shell already has `DEEPSEEK_API_KEY`, create local Pages secrets with:
 
 ```bash
-printf 'DEEPSEEK_API_KEY=%s\nDEFAULT_SEASON=SEASON_21\nDEEPSEEK_BASE_URL=https://api.deepseek.com\n' "$DEEPSEEK_API_KEY" > .dev.vars
+printf 'DEEPSEEK_API_KEY=%s\nDEFAULT_SEASON=SEASON_22\nDEEPSEEK_BASE_URL=https://api.deepseek.com\n' "$DEEPSEEK_API_KEY" > .dev.vars
 ```
 
 Otherwise fill `.dev.vars` manually:
 
 ```text
 DEEPSEEK_API_KEY=your-key
-DEFAULT_SEASON=SEASON_21
+DEFAULT_SEASON=SEASON_22
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 ```
 
